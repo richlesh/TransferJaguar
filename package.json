@@ -62,20 +62,8 @@
       "icon": "resources/app_icon_256.png",
       "category": "Utility",
       "target": [
-        {
-          "target": "deb",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "rpm",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
+        "deb",
+        "rpm"
       ]
     },
     "rpm": {
