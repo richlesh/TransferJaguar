@@ -42,6 +42,15 @@ jobs:
           KR_VERSION=$(node -p "require('@napi-rs/keyring/package.json').version")
           npm install --no-save --force --os=linux --cpu=${{ matrix.arch }} --libc=glibc "@napi-rs/keyring-linux-${{ matrix.arch }}-gnu@${KR_VERSION}"
 
+      # Rollup (pulled in by Vite) also ships its native parser as per-platform
+      # optional deps, hit by the same npm bug (npm/cli#4828) so `npm ci` can skip
+      # it and `vite build` fails with "Cannot find module @rollup/rollup-linux-x64-gnu".
+      # The renderer build runs on the x64 runner itself, so always fetch the x64 binary.
+      - name: Ensure Rollup native binding for the runner
+        run: |
+          RU_VERSION=$(node -p "require('rollup/package.json').version")
+          npm install --no-save --force --os=linux --cpu=x64 --libc=glibc "@rollup/rollup-linux-x64-gnu@${RU_VERSION}"
+
       - name: Install ARM64 cross-compilation tools
         if: matrix.arch == 'arm64'
         run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu

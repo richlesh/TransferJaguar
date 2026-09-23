@@ -42,6 +42,15 @@ jobs:
           KR_VERSION=$(node -p "require('@napi-rs/keyring/package.json').version")
           npm install --no-save --force --os=darwin --cpu=${{ matrix.arch }} "@napi-rs/keyring-darwin-${{ matrix.arch }}@${KR_VERSION}"
 
+      # Rollup (pulled in by Vite) also ships its native parser as per-platform
+      # optional deps, hit by the same npm bug (npm/cli#4828) so `npm ci` can skip
+      # it and `vite build` fails with "Cannot find module @rollup/rollup-darwin-arm64".
+      # The renderer build runs natively on the arm64 runner, so always fetch the arm64 binary.
+      - name: Ensure Rollup native binding for the runner
+        run: |
+          RU_VERSION=$(node -p "require('rollup/package.json').version")
+          npm install --no-save --force --os=darwin --cpu=arm64 "@rollup/rollup-darwin-arm64@${RU_VERSION}"
+
       - name: Import Developer ID certificate
         env:
           CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}

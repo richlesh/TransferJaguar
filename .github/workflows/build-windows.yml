@@ -44,6 +44,16 @@ jobs:
           $krVersion = node -p "require('@napi-rs/keyring/package.json').version"
           npm install --no-save --force --os=win32 --cpu=${{ matrix.arch }} "@napi-rs/keyring-win32-${{ matrix.arch }}-msvc@$krVersion"
 
+      # Rollup (pulled in by Vite) also ships its native parser as per-platform
+      # optional deps, hit by the same npm bug (npm/cli#4828) so `npm ci` can skip
+      # it and `vite build` fails with "Cannot find module @rollup/rollup-win32-x64-msvc".
+      # The renderer build runs on the x64 runner itself, so always fetch the x64 binary.
+      - name: Ensure Rollup native binding for the runner
+        shell: pwsh
+        run: |
+          $ruVersion = node -p "require('rollup/package.json').version"
+          npm install --no-save --force --os=win32 --cpu=x64 "@rollup/rollup-win32-x64-msvc@$ruVersion"
+
       - name: Inject license salt
         run: |
           @"
