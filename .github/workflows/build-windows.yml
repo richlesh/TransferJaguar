@@ -42,7 +42,7 @@ jobs:
         shell: pwsh
         run: |
           $krVersion = node -p "require('@napi-rs/keyring/package.json').version"
-          npm install --no-save --os=win32 --cpu=${{ matrix.arch }} "@napi-rs/keyring-win32-${{ matrix.arch }}-msvc@$krVersion"
+          npm install --no-save --force --os=win32 --cpu=${{ matrix.arch }} "@napi-rs/keyring-win32-${{ matrix.arch }}-msvc@$krVersion"
 
       - name: Inject license salt
         run: |

@@ -40,7 +40,7 @@ jobs:
       - name: Ensure keyring native binding for target arch
         run: |
           KR_VERSION=$(node -p "require('@napi-rs/keyring/package.json').version")
-          npm install --no-save --os=darwin --cpu=${{ matrix.arch }} "@napi-rs/keyring-darwin-${{ matrix.arch }}@${KR_VERSION}"
+          npm install --no-save --force --os=darwin --cpu=${{ matrix.arch }} "@napi-rs/keyring-darwin-${{ matrix.arch }}@${KR_VERSION}"
 
       - name: Import Developer ID certificate
         env:

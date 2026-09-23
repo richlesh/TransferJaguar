@@ -40,7 +40,7 @@ jobs:
       - name: Ensure keyring native binding for target arch
         run: |
           KR_VERSION=$(node -p "require('@napi-rs/keyring/package.json').version")
-          npm install --no-save --os=linux --cpu=${{ matrix.arch }} --libc=glibc "@napi-rs/keyring-linux-${{ matrix.arch }}-gnu@${KR_VERSION}"
+          npm install --no-save --force --os=linux --cpu=${{ matrix.arch }} --libc=glibc "@napi-rs/keyring-linux-${{ matrix.arch }}-gnu@${KR_VERSION}"
 
       - name: Install ARM64 cross-compilation tools
         if: matrix.arch == 'arm64'
