@@ -40,7 +40,16 @@ jobs:
       - name: Ensure keyring native binding for target arch
         run: |
           KR_VERSION=$(node -p "require('@napi-rs/keyring/package.json').version")
+          # Fetch the target-arch prebuilt (--force bypasses npm's host EBADPLATFORM check).
           npm install --no-save --force --os=darwin --cpu=${{ matrix.arch }} "@napi-rs/keyring-darwin-${{ matrix.arch }}@${KR_VERSION}"
+          # Copy the .node into the base @napi-rs/keyring package under the exact
+          # filename its loader tries FIRST (require('./keyring.darwin-<arch>.node')).
+          # The base package is a real, locked dependency that always gets bundled and
+          # unpacked, so the binary can't be dropped by electron-builder's optional-dep
+          # pruning the way a separate platform package can (npm/cli#4828 fallout).
+          cp "node_modules/@napi-rs/keyring-darwin-${{ matrix.arch }}/keyring.darwin-${{ matrix.arch }}.node" \
+             "node_modules/@napi-rs/keyring/keyring.darwin-${{ matrix.arch }}.node"
+          test -f "node_modules/@napi-rs/keyring/keyring.darwin-${{ matrix.arch }}.node"
 
       # Rollup (pulled in by Vite) also ships its native parser as per-platform
       # optional deps, hit by the same npm bug (npm/cli#4828) so `npm ci` can skip

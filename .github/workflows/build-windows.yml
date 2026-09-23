@@ -42,7 +42,17 @@ jobs:
         shell: pwsh
         run: |
           $krVersion = node -p "require('@napi-rs/keyring/package.json').version"
+          # Fetch the target-arch prebuilt (--force bypasses npm's host EBADPLATFORM check).
           npm install --no-save --force --os=win32 --cpu=${{ matrix.arch }} "@napi-rs/keyring-win32-${{ matrix.arch }}-msvc@$krVersion"
+          # Copy the .node into the base @napi-rs/keyring package under the exact
+          # filename its loader tries FIRST (require('./keyring.win32-<arch>-msvc.node')).
+          # The base package is a real, locked dependency that always gets bundled and
+          # unpacked, so the binary can't be dropped by electron-builder's optional-dep
+          # pruning the way a separate platform package can (npm/cli#4828 fallout).
+          $arch = "${{ matrix.arch }}"
+          Copy-Item "node_modules/@napi-rs/keyring-win32-$arch-msvc/keyring.win32-$arch-msvc.node" `
+                    "node_modules/@napi-rs/keyring/keyring.win32-$arch-msvc.node"
+          if (-not (Test-Path "node_modules/@napi-rs/keyring/keyring.win32-$arch-msvc.node")) { exit 1 }
 
       # Rollup (pulled in by Vite) also ships its native parser as per-platform
       # optional deps, hit by the same npm bug (npm/cli#4828) so `npm ci` can skip
