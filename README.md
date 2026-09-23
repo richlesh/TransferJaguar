@@ -1,6 +1,6 @@
 ![app_icon_256](resources/app_icon_256.png)
 
-# TransferJaguar v1.1.0
+# TransferJaguar v1.1.1
 
 A fast, cross-platform **SFTP file manager** built for slow, high-latency links
 (VPNs), where SMB/AFP crawl. Built with Electron, React, and TypeScript.

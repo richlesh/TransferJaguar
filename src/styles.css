@@ -100,8 +100,18 @@ body {
 .danger-text { color: var(--danger); }
 .file-table tr.selected { background: var(--row-selected) !important; }
 
-/* Drag-and-drop target highlight. */
-.pane.drag-over { outline: 2px dashed var(--accent); outline-offset: -4px; }
+/* Drag-and-drop target highlight. Uses an overlay (::before) for the same
+   reason as the focus ring below: the sticky table header would otherwise paint
+   over an outline's top edge. */
+.pane.drag-over::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 2px dashed var(--accent);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
 .transfer-btn { margin-left: 4px; white-space: nowrap; }
 button.secondary.tiny { padding: 2px 8px; font-size: 12px; }
 
@@ -159,14 +169,27 @@ button.secondary.tiny { padding: 2px 8px; font-size: 12px; }
 .progress-bar.paused { background: #f2994a; }
 .progress-bar.canceled { background: var(--muted); }
 
-.pane { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.pane { display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
 /* Active-pane focus ring: shows when focus is anywhere inside the pane (the
    file list is focusable for type-to-select). Use `outline`, not box-shadow:
    the pane's children (toolbar, path bar, list) have opaque backgrounds and
    would paint over an inset box-shadow's top/bottom edges. An outline is drawn
    above descendant content on all four sides. A small negative offset keeps it
    just inside the pane so the parent's overflow:hidden can't clip it. */
-.pane:focus-within { outline: 2px solid var(--accent, #4a90d9); outline-offset: -2px; border-radius: 4px; }
+/* Draw the active-pane ring as a high-z-index overlay (::after) rather than an
+   outline on .pane. The file list's sticky table header (position: sticky) is a
+   positioned descendant and paints above the ancestor's outline, clipping the
+   ring's top edge. An absolutely-positioned overlay with a high z-index paints
+   above the sticky header, and pointer-events:none keeps it click-through. */
+.pane:focus-within::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 2px solid var(--accent, #4a90d9);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
 .pane-toolbar {
   display: flex;
   align-items: center;
@@ -188,11 +211,9 @@ button.secondary.tiny { padding: 2px 8px; font-size: 12px; }
 }
 .pane-list { overflow: auto; flex: 1; min-height: 80px; }
 .pane-list:focus { outline: none; }
-/* Focus ring for the file list (it captures keystrokes for type-to-select).
-   Applied to the whole .pane via :focus-within rather than the .pane-list
-   itself: the list is a scroll container with an opaque sticky table header at
-   top:0, which would paint over an inset ring's top edge. Ringing the pane
-   avoids that clipping and clearly marks which pane is active. */
+/* The list captures keystrokes for type-to-select, so it's focusable but shows
+   no ring of its own; the active-pane ring is drawn on .pane via the
+   :focus-within::after overlay defined above. */
 
 .file-table { width: 100%; border-collapse: collapse; }
 .file-table th, .file-table td {

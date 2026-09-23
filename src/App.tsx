@@ -30,6 +30,10 @@ export function App() {
   const [cancelConfirm, setCancelConfirm] = useState<import("./shared/types").TransferTask | null>(null);
   const [tasks, setTasks] = useState<Map<string, import("./shared/types").TransferTask>>(new Map());
   const [paths, setPaths] = useState<{ local: string; remote: string }>({ local: "", remote: "" });
+  // Bumped when a pane's double-up button is clicked; both panes watch this and
+  // navigate to their parent folder together.
+  const [goUpSignal, setGoUpSignal] = useState(0);
+  const goUpBoth = useCallback(() => setGoUpSignal((n) => n + 1), []);
 
   // A transfer batch awaiting a conflict decision (policy "ask" + collisions).
   interface PendingBatch {
@@ -396,6 +400,8 @@ export function App() {
                 reloadKey={localReload}
                 showHidden={!!settings?.showHiddenFiles}
                 directorySort={settings?.directorySort ?? "top"}
+                onGoUpBoth={goUpBoth}
+                goUpSignal={goUpSignal}
               />
             ) : (
               <div className="empty">Loading local files…</div>
@@ -418,6 +424,8 @@ export function App() {
                 reloadKey={remoteReload}
                 showHidden={!!settings?.showHiddenFiles}
                 directorySort={settings?.directorySort ?? "top"}
+                onGoUpBoth={goUpBoth}
+                goUpSignal={goUpSignal}
               />
             ) : (
               <div className="empty big">

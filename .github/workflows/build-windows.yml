@@ -33,6 +33,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The @napi-rs/keyring native binding ships as per-platform prebuilt
+      # packages (optional deps). The runner is x64, so `npm ci` only fetches the
+      # x64 binary; the arm64 installer would then crash at launch with
+      # "Cannot find native binding" (npm optional-deps bug npm/cli#4828).
+      # Force-fetch the binary matching the target arch so it gets bundled.
+      - name: Ensure keyring native binding for target arch
+        shell: pwsh
+        run: |
+          $krVersion = node -p "require('@napi-rs/keyring/package.json').version"
+          npm install --no-save --os=win32 --cpu=${{ matrix.arch }} "@napi-rs/keyring-win32-${{ matrix.arch }}-msvc@$krVersion"
+
       - name: Inject license salt
         run: |
           @"

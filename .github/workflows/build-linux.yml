@@ -32,6 +32,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The @napi-rs/keyring native binding ships as per-platform prebuilt
+      # packages (optional deps). The runner is x64, so `npm ci` only fetches the
+      # x64 binary; the arm64 .deb/.rpm would then crash at launch with
+      # "Cannot find native binding" (npm optional-deps bug npm/cli#4828).
+      # Force-fetch the binary matching the target arch so it gets bundled.
+      - name: Ensure keyring native binding for target arch
+        run: |
+          KR_VERSION=$(node -p "require('@napi-rs/keyring/package.json').version")
+          npm install --no-save --os=linux --cpu=${{ matrix.arch }} --libc=glibc "@napi-rs/keyring-linux-${{ matrix.arch }}-gnu@${KR_VERSION}"
+
       - name: Install ARM64 cross-compilation tools
         if: matrix.arch == 'arm64'
         run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu

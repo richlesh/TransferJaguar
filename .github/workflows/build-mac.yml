@@ -32,6 +32,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The @napi-rs/keyring native binding ships as per-platform prebuilt
+      # packages (optional deps). macos-latest is arm64, so `npm ci` only fetches
+      # the arm64 binary; the x64 DMG would then crash at launch with
+      # "Cannot find native binding" (npm optional-deps bug npm/cli#4828).
+      # Force-fetch the binary matching the target arch so it gets bundled.
+      - name: Ensure keyring native binding for target arch
+        run: |
+          KR_VERSION=$(node -p "require('@napi-rs/keyring/package.json').version")
+          npm install --no-save --os=darwin --cpu=${{ matrix.arch }} "@napi-rs/keyring-darwin-${{ matrix.arch }}@${KR_VERSION}"
+
       - name: Import Developer ID certificate
         env:
           CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}

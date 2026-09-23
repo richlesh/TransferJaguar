@@ -17,6 +17,27 @@ export function UpArrowIcon({ size = 18 }: IconProps) {
   );
 }
 
+/** Double up arrow — navigate BOTH panes to their parent folder at once. */
+export function DoubleUpArrowIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size * 1.25} height={size} viewBox="0 0 30 24" fill="none"
+      stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+      style={{ display: "block", flexShrink: 0 }}>
+      {/* Two copies of UpArrowIcon's shape. The single arrow (24-unit viewBox)
+          renders at height `size`, so its stem shows 13*(size/24) px. Here the
+          viewBox is also 24 tall and height is `size`, so identical stem units
+          (13) render at the same displayed length; flexShrink:0 keeps the wider
+          svg from being squeezed (which would shorten the stems). */}
+      {/* Left up arrow */}
+      <line x1="9" y1="19" x2="9" y2="6" />
+      <polyline points="3 12 9 6 15 12" />
+      {/* Right up arrow */}
+      <line x1="21" y1="19" x2="21" y2="6" />
+      <polyline points="15 12 21 6 27 12" />
+    </svg>
+  );
+}
+
 /** Prominent reload — a large-radius circular arrow. */
 export function ReloadIcon({ size = 18 }: IconProps) {
   return (

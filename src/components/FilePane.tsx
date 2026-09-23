@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, typ
 import type { FsEntry, FsListing } from "../shared/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { PromptDialog } from "./PromptDialog";
-import { UpArrowIcon, ReloadIcon, NewFolderIcon, RenameIcon, TrashIcon, FolderEntryIcon, FileEntryIcon, SymlinkEntryIcon, TreeIcon } from "./Icons";
+import { UpArrowIcon, DoubleUpArrowIcon, ReloadIcon, NewFolderIcon, RenameIcon, TrashIcon, FolderEntryIcon, FileEntryIcon, SymlinkEntryIcon, TreeIcon } from "./Icons";
 import { DirTree } from "./DirTree";
 
 /** Filesystem operations for one side (local or remote), injected by the app so
@@ -38,6 +38,11 @@ interface Props {
   showHidden: boolean;
   /** Where directories sort relative to files. */
   directorySort: "top" | "inline" | "bottom";
+  /** Ask the app to move BOTH panes up one folder level (double up arrow). */
+  onGoUpBoth?: () => void;
+  /** Bump to command THIS pane to navigate to its parent folder (driven by the
+   *  double-up button in either pane). Skips the initial render. */
+  goUpSignal?: number;
 }
 
 function fmtSize(bytes: number, kind: FsEntry["kind"]): string {
@@ -102,7 +107,7 @@ function isWithin(base: string, target: string, sep: string): boolean {
 
 /** A directory view (local or remote) with navigate, refresh, new folder,
  *  rename, and delete (with confirmation). */
-export function FilePane({ title, ops, initialPath, onError, side, transferEnabled, transferLabel, onTransfer, onPathChange, reloadKey, showHidden, directorySort }: Props) {
+export function FilePane({ title, ops, initialPath, onError, side, transferEnabled, transferLabel, onTransfer, onPathChange, reloadKey, showHidden, directorySort, onGoUpBoth, goUpSignal }: Props) {
   const [path, setPath] = useState(initialPath);
   const [entries, setEntries] = useState<FsEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -246,6 +251,18 @@ export function FilePane({ title, ops, initialPath, onError, side, transferEnabl
     void load(pathRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reloadKey]);
+
+  // Navigate this pane to its parent folder when the app bumps goUpSignal (the
+  // double-up button in either pane moves BOTH panes up). Skips initial render.
+  const firstGoUp = useRef(true);
+  useEffect(() => {
+    if (firstGoUp.current) {
+      firstGoUp.current = false;
+      return;
+    }
+    void load(joinPath(pathRef.current, "..", ops.sep));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goUpSignal]);
 
   // Keep the directory tree rooted so it always contains the current directory.
   // If the user navigates ABOVE (or outside) the tree's current root — e.g. via
@@ -470,6 +487,14 @@ export function FilePane({ title, ops, initialPath, onError, side, transferEnabl
         </button>
         <button className="icon-btn" title="Parent folder" aria-label="Parent folder" onClick={() => void load(joinPath(path, "..", ops.sep))}>
           <UpArrowIcon />
+        </button>
+        <button
+          className="icon-btn"
+          title="Parent folder in both panes"
+          aria-label="Parent folder in both panes"
+          onClick={() => onGoUpBoth?.()}
+        >
+          <DoubleUpArrowIcon />
         </button>
         <button className="icon-btn" title="Refresh" aria-label="Refresh" onClick={() => void load(path)}>
           <ReloadIcon />
