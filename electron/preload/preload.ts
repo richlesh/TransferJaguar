@@ -18,6 +18,8 @@ const api: TransferJaguarApi = {
   oauthConnect: (siteId: string) => ipcRenderer.invoke(IPC.oauthConnect, siteId),
 
   connect: (siteId: string) => ipcRenderer.invoke(IPC.connect, siteId),
+  connectWithPassword: (siteId: string, password: string, forJumpHost: boolean) =>
+    ipcRenderer.invoke(IPC.connectWithPassword, siteId, password, forJumpHost),
   disconnect: (sessionId: string) => ipcRenderer.invoke(IPC.disconnect, sessionId),
   hostkeyTrust: (prompt: HostKeyPrompt) => ipcRenderer.invoke(IPC.hostkeyTrust, prompt),
 

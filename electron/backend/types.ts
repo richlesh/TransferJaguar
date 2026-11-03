@@ -4,7 +4,7 @@
 // protocols (S3, FTPS, …) can be added later by implementing this interface and
 // registering it in registry.ts.
 
-import type { Site, RemoteListing, HostKeyPrompt } from "../../src/shared/types.js";
+import type { Site, RemoteListing, HostKeyPrompt, PasswordPrompt } from "../../src/shared/types.js";
 
 /** Successful connect: an opaque session id plus the directory to open. */
 export interface ConnectOutcome {
@@ -18,7 +18,8 @@ export interface ConnectOutcome {
 export type EngineConnectResult =
   | ConnectOutcome
   | { ok: false; error: string }
-  | { ok: false; needsHostKeyTrust: true; prompt: HostKeyPrompt };
+  | { ok: false; needsHostKeyTrust: true; prompt: HostKeyPrompt }
+  | { ok: false; needsPassword: true; prompt: PasswordPrompt };
 
 /** One entry from a remote directory (name + kind + size), for walking trees. */
 export interface RemoteChild {

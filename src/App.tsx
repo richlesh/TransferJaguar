@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Site, HostKeyPrompt } from "./shared/types";
+import type { Site, HostKeyPrompt, PasswordPrompt } from "./shared/types";
 import type { AppSettings } from "./shared/ipc";
 import { SiteEditorDialog } from "./components/SiteEditorDialog";
 import { HostKeyDialog } from "./components/HostKeyDialog";
+import { PasswordDialog } from "./components/PasswordDialog";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { ConflictDialog, type ConflictChoice } from "./components/ConflictDialog";
@@ -22,6 +23,7 @@ export function App() {
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [hostKey, setHostKey] = useState<{ site: Site; prompt: HostKeyPrompt } | null>(null);
+  const [pwPrompt, setPwPrompt] = useState<{ site: Site; prompt: PasswordPrompt } | null>(null);
   const [localHome, setLocalHome] = useState<string>("");
   const [toast, setToast] = useState<string | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -123,8 +125,11 @@ export function App() {
       if (res.ok) {
         setSession({ sessionId: res.sessionId, site, cwd: res.cwd });
         setHostKey(null);
+        setPwPrompt(null);
       } else if ("needsHostKeyTrust" in res && res.needsHostKeyTrust) {
         setHostKey({ site, prompt: res.prompt });
+      } else if ("needsPassword" in res && res.needsPassword) {
+        setPwPrompt({ site, prompt: res.prompt });
       } else if ("error" in res) {
         setToast(res.error);
       }
@@ -132,6 +137,36 @@ export function App() {
       setConnectingId(null);
     }
   }, []);
+
+  // The user typed a password into the prompt: retry the connect with it (used
+  // for this attempt only, never stored). On further prompts (host key, or a
+  // wrong password) the same handlers take over.
+  const submitPassword = useCallback(async (password: string) => {
+    if (!pwPrompt) return;
+    const { site, prompt } = pwPrompt;
+    setPwPrompt(null);
+    setConnectingId(site.id);
+    try {
+      const res = await window.transferJaguar.connectWithPassword(
+        site.id,
+        password,
+        prompt.forJumpHost
+      );
+      if (res.ok) {
+        setSession({ sessionId: res.sessionId, site, cwd: res.cwd });
+        setHostKey(null);
+      } else if ("needsHostKeyTrust" in res && res.needsHostKeyTrust) {
+        setHostKey({ site, prompt: res.prompt });
+      } else if ("needsPassword" in res && res.needsPassword) {
+        // Still missing (e.g. empty submit or jump-then-target): prompt again.
+        setPwPrompt({ site, prompt: res.prompt });
+      } else if ("error" in res) {
+        setToast(res.error);
+      }
+    } finally {
+      setConnectingId(null);
+    }
+  }, [pwPrompt]);
 
   const trustAndConnect = useCallback(async () => {
     if (!hostKey) return;
@@ -476,6 +511,13 @@ export function App() {
           prompt={hostKey.prompt}
           onTrust={() => void trustAndConnect()}
           onCancel={() => setHostKey(null)}
+        />
+      )}
+      {pwPrompt && (
+        <PasswordDialog
+          prompt={pwPrompt.prompt}
+          onSubmit={(pw) => void submitPassword(pw)}
+          onCancel={() => setPwPrompt(null)}
         />
       )}
       {showSettings && settings && (

@@ -170,6 +170,14 @@ export function registerIpcHandlers(): void {
           detail: "Reachable — the server's host key isn't trusted yet. You'll be asked to verify it on connect.",
         };
       }
+      if ("needsPassword" in res && res.needsPassword) {
+        return {
+          ok: false,
+          error: res.prompt.forJumpHost
+            ? "Enter the jump host password to test this connection."
+            : "Enter a password to test this connection.",
+        };
+      }
       return { ok: false, error: "error" in res ? res.error : "Connection failed." };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
@@ -189,6 +197,27 @@ export function registerIpcHandlers(): void {
     if (!site) return { ok: false as const, error: "Site not found." };
     return connect(site);
   });
+
+  // Retry a connect with a password the user just typed into the prompt (used
+  // when password auth is selected but nothing was stored). The password is
+  // written to the keychain only transiently — for this one attempt — and
+  // removed immediately afterward, so it is never persisted. We only reach this
+  // path when no secret was stored, so the set/delete can't clobber a saved
+  // credential.
+  ipcMain.handle(
+    IPC.connectWithPassword,
+    async (_e, siteId: string, password: string, forJumpHost: boolean) => {
+      const site = getSite(siteId);
+      if (!site) return { ok: false as const, error: "Site not found." };
+      const account = forJumpHost ? jumpAccount(siteId) : siteId;
+      setSecret(account, password);
+      try {
+        return await connect(site);
+      } finally {
+        deleteSecret(account);
+      }
+    }
+  );
   ipcMain.handle(IPC.disconnect, (_e, sessionId: string) => disconnect(sessionId));
 
   // Host-key TOFU: persist trust for the presented key.

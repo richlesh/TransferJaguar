@@ -132,7 +132,23 @@ export type ConnectResult =
   | { ok: false; error: string }
   /** The server presented a host key we don't trust yet (TOFU). The UI must
    *  prompt, then call hostkeyTrust and retry the connect. */
-  | { ok: false; needsHostKeyTrust: true; prompt: HostKeyPrompt };
+  | { ok: false; needsHostKeyTrust: true; prompt: HostKeyPrompt }
+  /** Password auth is selected but no password is stored for the site. The UI
+   *  must prompt for one, then retry via connectWithPassword(siteId, password).
+   *  This is why a blank-password site previously failed with "all
+   *  authentication methods failed" without ever asking the user. */
+  | { ok: false; needsPassword: true; prompt: PasswordPrompt };
+
+/** Details shown to the user when a password is required but not stored. */
+export interface PasswordPrompt {
+  /** The site being connected to (for display). */
+  siteId: string;
+  host: string;
+  port: number;
+  username: string;
+  /** True when the missing password is for the jump host, not the target. */
+  forJumpHost: boolean;
+}
 
 /** Details shown to the user when a new or changed host key is seen. */
 export interface HostKeyPrompt {

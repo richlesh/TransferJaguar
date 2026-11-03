@@ -71,6 +71,14 @@ export interface TransferJaguarApi {
 
   // Connection lifecycle
   connect(siteId: string): Promise<ConnectResult>;
+  /** Retry a connect using a password the user just typed into the prompt
+   *  (because password auth was selected but nothing was stored). The password
+   *  is used for this one attempt only and never persisted. */
+  connectWithPassword(
+    siteId: string,
+    password: string,
+    forJumpHost: boolean
+  ): Promise<ConnectResult>;
   disconnect(sessionId: string): Promise<void>;
 
   // Host-key TOFU: trust the presented key, then the UI retries connect().
@@ -126,6 +134,7 @@ export const IPC = {
   pickFile: "app:pick-file",
   oauthConnect: "oauth:connect",
   connect: "conn:connect",
+  connectWithPassword: "conn:connect-with-password",
   disconnect: "conn:disconnect",
   hostkeyTrust: "hostkey:trust",
   remoteList: "remote:list",

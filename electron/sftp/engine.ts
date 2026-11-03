@@ -189,6 +189,44 @@ export function connect(site: Site): Promise<EngineConnectResult> {
         resolve(r);
       };
 
+      // Password auth with no stored secret: ask the UI to prompt rather than
+      // attempting a doomed empty-password login (which ssh2 reports as "all
+      // configured authentication methods failed" without ever asking the
+      // user). Check the jump host first since it is dialed first. A blank
+      // ("") stored secret counts as "not set" for prompting purposes.
+      if (site.jump?.enabled && site.jump.authMethod === "password") {
+        const jumpSecret = getSecret(jumpAccount(site.id));
+        if (!jumpSecret) {
+          return done({
+            ok: false,
+            needsPassword: true,
+            prompt: {
+              siteId: site.id,
+              host: site.jump.host,
+              port: site.jump.port || 22,
+              username: site.jump.username,
+              forJumpHost: true,
+            },
+          });
+        }
+      }
+      if (site.authMethod === "password") {
+        const secret = getSecret(site.id);
+        if (!secret) {
+          return done({
+            ok: false,
+            needsPassword: true,
+            prompt: {
+              siteId: site.id,
+              host: site.host,
+              port: site.port || 22,
+              username: site.username,
+              forJumpHost: false,
+            },
+          });
+        }
+      }
+
       // If a jump host is enabled, dial it first and tunnel to the target.
       let sock: import("ssh2").ClientChannel | undefined;
       let bastion: Client | undefined;
