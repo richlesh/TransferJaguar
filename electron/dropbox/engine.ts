@@ -16,7 +16,7 @@ import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import type { Site, RemoteEntry, RemoteListing } from "../../src/shared/types.js";
 import type { RemoteBackend, RemoteChild, TransferControl, EngineConnectResult } from "../backend/types.js";
-import { DROPBOX_PROVIDER, isProviderConfigured } from "../oauth/provider.js";
+import { DROPBOX_PROVIDER, isProviderConfigured, notConfiguredMessage } from "../oauth/provider.js";
 import { getValidAccessToken, hasTokens } from "../oauth/tokens.js";
 import { pipeStreams } from "../sftp/engine.js";
 
@@ -109,7 +109,7 @@ function toEntry(e: DbxEntry): RemoteEntry {
 
 async function connect(site: Site): Promise<EngineConnectResult> {
   if (!isProviderConfigured(DROPBOX_PROVIDER)) {
-    return { ok: false, error: "Dropbox isn't configured in this build (missing client ID)." };
+    return { ok: false, error: notConfiguredMessage(DROPBOX_PROVIDER, "Dropbox") };
   }
   if (!hasTokens(site.id)) {
     return { ok: false, error: "Not connected to Dropbox. Use “Connect to Dropbox” in the site editor." };

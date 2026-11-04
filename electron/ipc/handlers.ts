@@ -12,7 +12,7 @@ import { listSites, saveSite, deleteSite, getSite } from "../sites.js";
 import { setSecret, deleteSecret, jumpAccount, getSecret } from "../secrets.js";
 import { trustHostKey } from "../knownHosts.js";
 import { connect, disconnect, list, rename as remoteRename, mkdir as remoteMkdir, remove as remoteRemove } from "../backend/registry.js";
-import { DROPBOX_PROVIDER, ONEDRIVE_PROVIDER, GOOGLE_PROVIDER, isProviderConfigured } from "../oauth/provider.js";
+import { DROPBOX_PROVIDER, ONEDRIVE_PROVIDER, GOOGLE_PROVIDER, isProviderConfigured, notConfiguredMessage } from "../oauth/provider.js";
 import type { OAuthProvider } from "../oauth/provider.js";
 import { runConsentFlow } from "../oauth/flow.js";
 import { storeTokens, deleteTokens } from "../oauth/tokens.js";
@@ -67,18 +67,22 @@ export function registerIpcHandlers(): void {
     // Pick the provider + account-label fetcher for this site's protocol.
     let provider: OAuthProvider;
     let getLabel: (sessionId: string) => Promise<string | null>;
+    let displayName: string;
     if (site.protocol === "onedrive") {
       provider = ONEDRIVE_PROVIDER;
       getLabel = onedriveAccountLabel;
+      displayName = "OneDrive";
     } else if (site.protocol === "gdrive") {
       provider = GOOGLE_PROVIDER;
       getLabel = gdriveAccountLabel;
+      displayName = "Google Drive";
     } else {
       provider = DROPBOX_PROVIDER;
       getLabel = dropboxAccountLabel;
+      displayName = "Dropbox";
     }
     if (!isProviderConfigured(provider)) {
-      return { ok: false, error: `${provider.id} isn't configured in this build (missing client ID).` };
+      return { ok: false, error: notConfiguredMessage(provider, displayName) };
     }
 
     try {

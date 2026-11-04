@@ -16,7 +16,7 @@ import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import type { Site, RemoteEntry, RemoteListing } from "../../src/shared/types.js";
 import type { RemoteBackend, RemoteChild, TransferControl, EngineConnectResult } from "../backend/types.js";
-import { ONEDRIVE_PROVIDER, isProviderConfigured } from "../oauth/provider.js";
+import { ONEDRIVE_PROVIDER, isProviderConfigured, notConfiguredMessage } from "../oauth/provider.js";
 import { getValidAccessToken, hasTokens } from "../oauth/tokens.js";
 import { pipeStreams } from "../sftp/engine.js";
 
@@ -156,7 +156,7 @@ async function listItems(sessionId: string, path: string): Promise<DriveItem[]> 
 
 async function connect(site: Site): Promise<EngineConnectResult> {
   if (!isProviderConfigured(ONEDRIVE_PROVIDER)) {
-    return { ok: false, error: "OneDrive isn't configured in this build (missing client ID)." };
+    return { ok: false, error: notConfiguredMessage(ONEDRIVE_PROVIDER, "OneDrive") };
   }
   if (!hasTokens(site.id)) {
     return { ok: false, error: "Not connected to OneDrive. Use “Connect to OneDrive” in the site editor." };

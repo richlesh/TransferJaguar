@@ -16,7 +16,7 @@ import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import type { Site, RemoteEntry, RemoteListing } from "../../src/shared/types.js";
 import type { RemoteBackend, RemoteChild, TransferControl, EngineConnectResult } from "../backend/types.js";
-import { GOOGLE_PROVIDER, isProviderConfigured } from "../oauth/provider.js";
+import { GOOGLE_PROVIDER, isProviderConfigured, notConfiguredMessage } from "../oauth/provider.js";
 import { getValidAccessToken, hasTokens } from "../oauth/tokens.js";
 import { pipeStreams } from "../sftp/engine.js";
 
@@ -203,7 +203,7 @@ async function listFiles(sessionId: string, path: string): Promise<DriveFile[]> 
 
 async function connect(site: Site): Promise<EngineConnectResult> {
   if (!isProviderConfigured(GOOGLE_PROVIDER)) {
-    return { ok: false, error: "Google Drive isn't configured in this build (missing client ID)." };
+    return { ok: false, error: notConfiguredMessage(GOOGLE_PROVIDER, "Google Drive") };
   }
   if (!hasTokens(site.id)) {
     return { ok: false, error: "Not connected to Google Drive. Use “Connect to Google Drive” in the site editor." };

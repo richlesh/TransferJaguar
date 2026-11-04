@@ -63,6 +63,31 @@ export function isProviderConfigured(p: OAuthProvider): boolean {
   return !!p.clientId && !p.clientId.startsWith("PLACEHOLDER_");
 }
 
+/** The build-time env var / GitHub secret that supplies a provider's client ID.
+ *  Used to produce an actionable "not configured" message. */
+export function clientIdEnvVar(p: OAuthProvider): string {
+  switch (p.id) {
+    case "dropbox":
+      return "DROPBOX_CLIENT_ID";
+    case "onedrive":
+      return "ONEDRIVE_CLIENT_ID";
+    case "gdrive":
+      return "GOOGLE_CLIENT_ID";
+    default:
+      return `${p.id.toUpperCase()}_CLIENT_ID`;
+  }
+}
+
+/** A human-readable, actionable "this provider isn't configured" message naming
+ *  the exact secret/env var the build needs. */
+export function notConfiguredMessage(p: OAuthProvider, displayName: string): string {
+  return (
+    `${displayName} isn't available in this build: its OAuth client ID wasn't ` +
+    `baked in. Set the ${clientIdEnvVar(p)} GitHub secret (or env var) and rebuild. ` +
+    `See electron/oauth/provider.ts for the ${displayName} app-registration steps.`
+  );
+}
+
 /**
  * OneDrive via Microsoft Graph (Model A). Uses the "common" tenant so both
  * personal OneDrive and work/school (Microsoft 365) accounts can sign in.
