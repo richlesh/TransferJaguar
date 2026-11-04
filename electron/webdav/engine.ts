@@ -103,6 +103,21 @@ async function clientForSite(site: Site): Promise<WebDAVClient> {
 }
 
 async function connect(site: Site): Promise<EngineConnectResult> {
+  // "Always ask": prompt for the password / bearer token instead of using a
+  // stored one. Only meaningful when the WebDAV auth scheme uses a secret.
+  if (site.alwaysAsk && site.webdavAuth !== "none") {
+    return {
+      ok: false,
+      needsPassword: true,
+      prompt: {
+        siteId: site.id,
+        host: site.baseUrl || site.host,
+        port: site.port || 0,
+        username: site.username,
+        forJumpHost: false,
+      },
+    };
+  }
   let client: WebDAVClient;
   try {
     client = await clientForSite(site);

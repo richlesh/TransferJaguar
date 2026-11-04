@@ -157,6 +157,22 @@ function dirnamePosix(p: string): string {
 }
 
 async function connect(site: Site): Promise<EngineConnectResult> {
+  // "Always ask": prompt for the password rather than using the stored one.
+  // (FTP allows an empty password — e.g. anonymous — so we only prompt when the
+  // site explicitly opted into always-ask, not merely when none is stored.)
+  if (site.alwaysAsk) {
+    return {
+      ok: false,
+      needsPassword: true,
+      prompt: {
+        siteId: site.id,
+        host: site.host,
+        port: site.port || 21,
+        username: site.username,
+        forJumpHost: false,
+      },
+    };
+  }
   const id = randomUUID();
   const session: Session = { id, site, pool: [], waiters: [], closed: false };
   try {

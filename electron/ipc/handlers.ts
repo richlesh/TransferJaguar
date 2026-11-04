@@ -217,8 +217,13 @@ export function registerIpcHandlers(): void {
       if (!site) return { ok: false as const, error: "Site not found." };
       const account = forJumpHost ? jumpAccount(siteId) : siteId;
       setSecret(account, password);
+      // The password the user just typed is now in the keychain, so connect
+      // with alwaysAsk cleared — otherwise the engine would see alwaysAsk and
+      // prompt again instead of using the password we were just given (which is
+      // why "Always ask" could prompt but never actually connect).
+      const siteForAttempt: Site = { ...site, alwaysAsk: false };
       try {
-        return await connect(site);
+        return await connect(siteForAttempt);
       } finally {
         deleteSecret(account);
       }

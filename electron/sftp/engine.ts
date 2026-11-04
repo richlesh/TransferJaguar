@@ -228,6 +228,23 @@ export function connect(site: Site): Promise<EngineConnectResult> {
           });
         }
       }
+      // Key auth with "Always ask": prompt for the passphrase on each connect
+      // (the typed passphrase is supplied via connectWithPassword and used for
+      // this attempt only). A key with no passphrase simply leaves alwaysAsk
+      // off, so this never fires for passphrase-less keys.
+      if (site.authMethod === "key" && site.alwaysAsk) {
+        return done({
+          ok: false,
+          needsPassword: true,
+          prompt: {
+            siteId: site.id,
+            host: site.host,
+            port: site.port || 22,
+            username: site.username,
+            forJumpHost: false,
+          },
+        });
+      }
 
       // If a jump host is enabled, dial it first and tunnel to the target.
       let sock: import("ssh2").ClientChannel | undefined;

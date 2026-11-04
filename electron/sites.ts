@@ -40,7 +40,10 @@ function toStored(input: SiteInput, id: string): Site {
     privateKeyPath: input.privateKeyPath?.trim() || undefined,
     startDir: input.startDir?.trim() || undefined,
     compression: !!input.compression,
-    alwaysAsk: input.authMethod === "password" ? !!input.alwaysAsk : undefined,
+    // "Always ask" (don't store the secret, prompt on connect) applies to any
+    // secret-bearing auth: SFTP password or key passphrase, and FTP / WebDAV
+    // passwords. Harmless/ignored for agent and OAuth protocols.
+    alwaysAsk: !!input.alwaysAsk || undefined,
     protocol,
     useRsync: protocol === "sftp" ? !!input.useRsync : undefined,
     rsyncPath: protocol === "sftp" && input.useRsync ? input.rsyncPath?.trim() || undefined : undefined,

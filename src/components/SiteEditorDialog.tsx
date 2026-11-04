@@ -128,7 +128,9 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
         baseUrl: url,
         webdavAuth,
         startDir: startDir.trim() || undefined,
+        alwaysAsk,
         secret: secret.length > 0 ? secret : undefined,
+        clearSecret: alwaysAsk ? true : undefined,
       };
     }
     if (protocol === "ftp") {
@@ -143,7 +145,9 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
         authMethod: "password",
         ftpSecurity,
         startDir: startDir.trim() || undefined,
+        alwaysAsk,
         secret: secret.length > 0 ? secret : undefined,
+        clearSecret: alwaysAsk ? true : undefined,
       };
     }
     if (protocol === "dropbox") {
@@ -199,12 +203,14 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
       compression,
       useRsync,
       rsyncPath: useRsync ? rsyncPath.trim() || undefined : undefined,
-      // "Always ask" never stores a password; sending no secret + clearSecret
-      // removes any previously stored one. Otherwise a typed password is stored
-      // and a blank field leaves the existing one unchanged.
-      alwaysAsk: authMethod === "password" ? alwaysAsk : undefined,
-      secret: !alwaysAsk && secret.length > 0 ? secret : undefined,
-      clearSecret: authMethod === "password" && alwaysAsk ? true : undefined,
+      // Always pass the typed secret so Test can use it. On save, the handler
+      // stores it only when alwaysAsk is off; with alwaysAsk on it sends
+      // clearSecret and the handler removes any stored secret (never persists).
+      // Applies to both password and key-passphrase auth.
+      alwaysAsk: authMethod === "password" || authMethod === "key" ? alwaysAsk : undefined,
+      secret: secret.length > 0 ? secret : undefined,
+      clearSecret:
+        (authMethod === "password" || authMethod === "key") && alwaysAsk ? true : undefined,
       jump: jumpEnabled
         ? {
             enabled: true,
@@ -440,10 +446,20 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
               <input
                 type="password"
                 value={secret}
-                placeholder={site ? "•••••• (leave blank to keep current)" : ""}
+                placeholder={
+                  alwaysAsk
+                    ? "Not stored — type here only to Test; you'll be asked on connect"
+                    : site
+                      ? "•••••• (leave blank to keep current)"
+                      : ""
+                }
                 onChange={(e) => setSecret(e.target.value)}
               />
             </div>
+            <label className="check-row">
+              <input type="checkbox" checked={alwaysAsk} onChange={(e) => setAlwaysAsk(e.target.checked)} />
+              Always ask for password (don't store it)
+            </label>
             <div className="field">
               <label>Start directory (optional)</label>
               <input value={startDir} placeholder="/" onChange={(e) => setStartDir(e.target.value)} />
@@ -479,10 +495,24 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
                 <input
                   type="password"
                   value={secret}
-                  placeholder={site ? "•••••• (leave blank to keep current)" : ""}
+                  placeholder={
+                    alwaysAsk
+                      ? "Not stored — type here only to Test; you'll be asked on connect"
+                      : site
+                        ? "•••••• (leave blank to keep current)"
+                        : ""
+                  }
                   onChange={(e) => setSecret(e.target.value)}
                 />
               </div>
+            )}
+            {webdavAuth !== "none" && (
+              <label className="check-row">
+                <input type="checkbox" checked={alwaysAsk} onChange={(e) => setAlwaysAsk(e.target.checked)} />
+                {webdavAuth === "bearer"
+                  ? "Always ask for bearer token (don't store it)"
+                  : "Always ask for password (don't store it)"}
+              </label>
             )}
             <div className="field">
               <label>Start directory (optional)</label>
@@ -528,11 +558,10 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
                 <label>{secretLabel}</label>
                 <input
                   type="password"
-                  value={alwaysAsk && authMethod === "password" ? "" : secret}
-                  disabled={alwaysAsk && authMethod === "password"}
+                  value={secret}
                   placeholder={
-                    alwaysAsk && authMethod === "password"
-                      ? "Will be asked on each connect"
+                    alwaysAsk && (authMethod === "password" || authMethod === "key")
+                      ? "Not stored — type here only to Test; you'll be asked on connect"
                       : site
                         ? "•••••• (leave blank to keep current)"
                         : ""
@@ -541,17 +570,16 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
                 />
               </div>
             )}
-            {authMethod === "password" && (
+            {(authMethod === "password" || authMethod === "key") && (
               <label className="check-row">
                 <input
                   type="checkbox"
                   checked={alwaysAsk}
-                  onChange={(e) => {
-                    setAlwaysAsk(e.target.checked);
-                    if (e.target.checked) setSecret("");
-                  }}
+                  onChange={(e) => setAlwaysAsk(e.target.checked)}
                 />
-                Always ask for password (don't store it)
+                {authMethod === "key"
+                  ? "Always ask for key passphrase (don't store it)"
+                  : "Always ask for password (don't store it)"}
               </label>
             )}
             <div className="field">
