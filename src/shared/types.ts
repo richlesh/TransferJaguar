@@ -30,6 +30,9 @@ export interface Site {
   startDir?: string;
   /** Opt-in SSH compression (zlib@openssh.com) — helps on slow links. */
   compression?: boolean;
+  /** Password auth only: never store a password; prompt for it on every
+   *  connect. When set, no secret is kept in the keychain for this site. */
+  alwaysAsk?: boolean;
   /** Jump host / bastion: connect through this host to reach the target. */
   jump?: JumpHost;
   /** SFTP only: use the local `rsync` binary (over SSH) for file copies when
@@ -85,6 +88,9 @@ export interface SiteInput extends Omit<Site, "id"> {
   /** Transient secret provided by the UI at save time; routed to the keychain,
    *  never persisted in the settings JSON. Empty/undefined leaves it unchanged. */
   secret?: string;
+  /** Explicitly clear the stored site secret on save (e.g. the user cleared the
+   *  password field and wants it removed, not kept). Independent of `secret`. */
+  clearSecret?: boolean;
   /** Transient bastion secret (password / key passphrase); routed to the keychain
    *  under `<siteId>:jump`. Empty/undefined leaves it unchanged. */
   jumpSecret?: string;

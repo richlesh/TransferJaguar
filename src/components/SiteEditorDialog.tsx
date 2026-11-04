@@ -24,6 +24,9 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
   const defaultRsync = navigator.platform.startsWith("Win") ? "" : "/usr/bin/rsync";
   const [rsyncPath, setRsyncPath] = useState(site?.rsyncPath ?? defaultRsync);
   const [secret, setSecret] = useState("");
+  // SFTP password auth: when set, never store a password — prompt on each
+  // connect. Disables the password field and clears any stored secret on save.
+  const [alwaysAsk, setAlwaysAsk] = useState(!!site?.alwaysAsk);
   // WebDAV.
   const [baseUrl, setBaseUrl] = useState(site?.baseUrl ?? "");
   const [webdavAuth, setWebdavAuth] = useState<WebdavAuth>(site?.webdavAuth ?? "basic");
@@ -196,7 +199,12 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
       compression,
       useRsync,
       rsyncPath: useRsync ? rsyncPath.trim() || undefined : undefined,
-      secret: secret.length > 0 ? secret : undefined,
+      // "Always ask" never stores a password; sending no secret + clearSecret
+      // removes any previously stored one. Otherwise a typed password is stored
+      // and a blank field leaves the existing one unchanged.
+      alwaysAsk: authMethod === "password" ? alwaysAsk : undefined,
+      secret: !alwaysAsk && secret.length > 0 ? secret : undefined,
+      clearSecret: authMethod === "password" && alwaysAsk ? true : undefined,
       jump: jumpEnabled
         ? {
             enabled: true,
@@ -520,11 +528,31 @@ export function SiteEditorDialog({ site, onCancel, onSaved }: Props) {
                 <label>{secretLabel}</label>
                 <input
                   type="password"
-                  value={secret}
-                  placeholder={site ? "•••••• (leave blank to keep current)" : ""}
+                  value={alwaysAsk && authMethod === "password" ? "" : secret}
+                  disabled={alwaysAsk && authMethod === "password"}
+                  placeholder={
+                    alwaysAsk && authMethod === "password"
+                      ? "Will be asked on each connect"
+                      : site
+                        ? "•••••• (leave blank to keep current)"
+                        : ""
+                  }
                   onChange={(e) => setSecret(e.target.value)}
                 />
               </div>
+            )}
+            {authMethod === "password" && (
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={alwaysAsk}
+                  onChange={(e) => {
+                    setAlwaysAsk(e.target.checked);
+                    if (e.target.checked) setSecret("");
+                  }}
+                />
+                Always ask for password (don't store it)
+              </label>
             )}
             <div className="field">
               <label>Start directory (optional)</label>

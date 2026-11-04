@@ -36,8 +36,14 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.listSites, () => listSites());
   ipcMain.handle(IPC.saveSite, (_e, input: SiteInput) => {
     const site = saveSite(input);
-    // Route any provided secrets to the keychain (never persisted in JSON).
-    if (typeof input.secret === "string" && input.secret.length > 0) {
+    // Secret handling (keychain only; never persisted in JSON):
+    //   - "Always ask" or an explicit clear request removes the stored secret
+    //     (so a blank field can actually clear it, and always-ask never stores).
+    //   - Otherwise a non-empty secret replaces the stored one; a blank field
+    //     leaves the existing secret unchanged.
+    if (input.alwaysAsk || input.clearSecret) {
+      deleteSecret(site.id);
+    } else if (typeof input.secret === "string" && input.secret.length > 0) {
       setSecret(site.id, input.secret);
     }
     if (typeof input.jumpSecret === "string" && input.jumpSecret.length > 0) {

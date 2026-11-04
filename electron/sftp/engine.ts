@@ -212,7 +212,9 @@ export function connect(site: Site): Promise<EngineConnectResult> {
       }
       if (site.authMethod === "password") {
         const secret = getSecret(site.id);
-        if (!secret) {
+        // Prompt when there's no stored secret, or when the site is marked
+        // "always ask" (which also never keeps a stored secret).
+        if (site.alwaysAsk || !secret) {
           return done({
             ok: false,
             needsPassword: true,
