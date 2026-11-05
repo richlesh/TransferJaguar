@@ -119,6 +119,15 @@ export function registerIpcHandlers(): void {
     const tempId = `test:${randomUUID()}`;
     const existing = input.id ? getSite(input.id) : null;
 
+    // OAuth protocols (Dropbox / OneDrive / Google Drive) authenticate with
+    // tokens stored in the keychain keyed by the *real* site id. A throwaway
+    // temp id has no tokens, so the engine would report "not connected" even
+    // though the saved site connects fine from the main window. For these
+    // protocols, test against the existing site id when we have one.
+    const protocol = input.protocol ?? existing?.protocol ?? "sftp";
+    const isOAuth = protocol === "dropbox" || protocol === "onedrive" || protocol === "gdrive";
+    const effectiveId = isOAuth && input.id ? input.id : tempId;
+
     // Resolve which secrets to use for the attempt.
     const siteSecret =
       typeof input.secret === "string" && input.secret.length > 0
@@ -136,10 +145,11 @@ export function registerIpcHandlers(): void {
     if (siteSecret) setSecret(tempId, siteSecret);
     if (jumpSecret) setSecret(jumpAccount(tempId), jumpSecret);
 
-    // Build a throwaway Site the backends can consume, keyed by the temp id.
-    const protocol = input.protocol ?? existing?.protocol ?? "sftp";
+    // Build a throwaway Site the backends can consume. Non-OAuth protocols are
+    // keyed by the temp id (so typed-but-unsaved secrets apply); OAuth protocols
+    // reuse the real site id so stored tokens are found.
     const site: Site = {
-      id: tempId,
+      id: effectiveId,
       name: input.name?.trim() || "test",
       host: input.host?.trim() || "",
       port: input.port || 22,
@@ -152,6 +162,9 @@ export function registerIpcHandlers(): void {
       baseUrl: protocol === "webdav" ? input.baseUrl?.trim() || undefined : undefined,
       webdavAuth: protocol === "webdav" ? input.webdavAuth ?? "basic" : undefined,
       ftpSecurity: protocol === "ftp" ? input.ftpSecurity ?? "explicit" : undefined,
+      dropboxStartPath: protocol === "dropbox" ? input.dropboxStartPath?.trim() || undefined : undefined,
+      onedriveStartPath: protocol === "onedrive" ? input.onedriveStartPath?.trim() || undefined : undefined,
+      gdriveStartPath: protocol === "gdrive" ? input.gdriveStartPath?.trim() || undefined : undefined,
       jump:
         protocol === "sftp" && input.jump && input.jump.enabled && input.jump.host.trim()
           ? {
