@@ -1,6 +1,6 @@
 ![app_icon_256](resources/app_icon_256.png)
 
-# TransferJaguar v1.1.1
+# TransferJaguar v1.1.5
 
 A fast, cross-platform **SFTP file manager** built for slow, high-latency links
 (VPNs), where SMB/AFP crawl. Built with Electron, React, and TypeScript.
@@ -29,7 +29,13 @@ optional compression, so moving files over a slow link stays responsive.
   username, start directory, options), with connect / edit / delete right on
   each site in the sidebar
 - **Three auth methods** — private key (with optional passphrase), **ssh-agent**,
-  and **password / keyboard-interactive**
+  and **password / keyboard-interactive**. Secrets can be stored in the OS
+  keychain or set to **"Always ask" (don't store it)** — in which case the app
+  prompts for the password / passphrase / token on each connect. You can also
+  clear a previously-stored secret from the site editor
+- **Test connection** — the site editor can **test** a connection with the
+  current (unsaved) form values before saving, reporting success or the error
+  (works for all protocols, including the OAuth ones)
 - **Host-key TOFU** — trust-on-first-use verification against a persisted
   trusted-hosts store; a loud warning if a previously-trusted key changes
   (possible MITM)
@@ -55,6 +61,8 @@ optional compression, so moving files over a slow link stays responsive.
   confirmation), and new folder
 - **Multi-select** — Cmd/Ctrl-click to toggle, Shift-click for a range; delete
   and transfer act on the whole selection
+- **Type-to-select** — start typing in a file list to jump to the matching entry
+- **Up button** — a double-up button navigates **both** panes up one folder level
 
 ### Transfers
 - **Streaming transfer engine** — upload and download over SFTP with manual flow
@@ -68,7 +76,9 @@ optional compression, so moving files over a slow link stays responsive.
 - **Resume partial transfers** — an interrupted transfer continues from the
   partial file's byte offset instead of restarting
 - **Conflict handling** — when a destination exists: keep both (auto-rename),
-  overwrite, or skip (Settings default)
+  overwrite, or skip (Settings default). An interactive dialog can ask when
+  items already exist; your choice applies to the whole batch ("Skip" transfers
+  the non-duplicates and leaves the existing items untouched)
 - **Optional checksum verify** — verify each file with SHA-256 after transfer
   (uses the server's `sha256sum`; off by default)
 
@@ -242,7 +252,8 @@ ongoing.
 - **Secrets** (passwords, key passphrases — including a separate bastion
   credential) → the **OS keychain** via `@napi-rs/keyring` (Keychain / Windows
   Credential Manager / libsecret), referenced by site id — never written to the
-  JSON files.
+  JSON files. A site can instead be set to **"Always ask"**, which stores no
+  secret at all and prompts on each connect.
 - **OAuth tokens** (Dropbox / OneDrive / Google Drive access + refresh tokens) →
   the same **OS keychain**, stored per site and refreshed transparently; never
   written to the JSON files.
@@ -278,9 +289,11 @@ npm run dist:linux:x64     # or :arm64
 
 ## Releasing (signed, via GitHub Actions)
 
-Pushing a **tag** (e.g. `1.0.0`) — or running a workflow manually with a tag —
-triggers the mac/win/linux build workflows, which produce **signed** artifacts
-and upload them to a **draft** GitHub Release.
+Releases are built by **manually** running the mac/win/linux build workflows
+(GitHub Actions → **Run workflow**) and supplying a version tag (e.g. `1.0.0`)
+as the input. Each workflow sets the app version from that input, produces
+**signed** artifacts, and uploads them to a GitHub Release that is **published**
+and marked **Latest** (not a draft).
 
 Required repository **secrets**:
 
